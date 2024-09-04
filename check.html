@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check - My Website with Teachable Machine Image Upload</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Include TensorFlow.js and Teachable Machine Image libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <style>
+        /* Add any necessary styles here */
+        #uploaded-image {
+            max-width: 100%;
+            height: auto;
+        }
+        #label-container {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ตรวจสอบผลไม้ตระกูลเบอร์รี่</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">หน้าหลัก</a></li>
+                    <li><a href="check.html">ตรวจสอบ</a></li>
+                    <li><a href="about.html">ติดต่อฉัน</a></li>
+                </ul>
+            </nav>
+        </header>
+        <main>
+            <h2>หน้าตรวจสอบผลไม้</h2>
+            <!-- Teachable Machine Image Upload Section -->
+            <div>โปรดวางรูปผลไม้ที่นี่</div>
+            <input type="file" id="file-input" accept="image/*">
+            <img id="uploaded-image" style="display: none;">
+            <div id="label-container"></div>
+        </main>
+        <footer>
+            <p>&copy; 2024 My Website Berries</p>
+        </footer>
+    </div>
+    <script type="text/javascript">
+        // the link to your model provided by Teachable Machine export panel
+        const URL = "https://teachablemachine.withgoogle.com/models/PoGiIDEHg/";
+
+        let model, labelContainer, maxPredictions;
+
+        // Load the image model
+        async function init() {
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+
+            // load the model and metadata
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+
+            // append elements to the DOM
+            labelContainer = document.getElementById("label-container");
+            for (let i = 0; i < maxPredictions; i++) {
+                labelContainer.appendChild(document.createElement("div"));
+            }
+
+            // Set up the file input change event
+            document.getElementById("file-input").addEventListener("change", handleFileSelect);
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imgElement = document.getElementById("uploaded-image");
+                    imgElement.src = e.target.result;
+                    imgElement.style.display = "block";
+                    imgElement.onload = async function() {
+                        await predict(imgElement);
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // run the uploaded image through the image model
+        async function predict(imageElement) {
+            const prediction = await model.predict(imageElement);
+            for (let i = 0; i < maxPredictions; i++) {
+                const classPrediction =
+                    prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+                labelContainer.childNodes[i].innerHTML = classPrediction;
+            }
+        }
+
+        // Initialize the application
+        init();
+    </script>
+</body>
+</html>
